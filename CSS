@@ -1,0 +1,88 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0a0d14;
+  color: white;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  padding: 15px 20px;
+  background: #111520;
+  border-bottom: 1px solid #222;
+}
+
+.tabs button {
+  margin-right: 10px;
+  background: #222;
+}
+
+.tabs button.active {
+  background: #2563eb;
+}
+
+/* Layout */
+.container {
+  padding: 20px;
+}
+
+.card {
+  background: #161c2d;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+/* Inputs */
+input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  background: #000;
+  border: 1px solid #333;
+  color: white;
+}
+
+/* Buttons */
+button {
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+  background: #2563eb;
+  color: white;
+}
+
+button:hover {
+  background: #1d4ed8;
+}
+
+/* Table */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table td, .table th {
+  padding: 10px;
+  border-bottom: 1px solid #333;
+}
+
+/* Risk */
+.risk-high { color: #ef4444; }
+.risk-medium { color: #f59e0b; }
+.risk-low { color: #10b981; }
+
+/* Toast */
+#toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+}
+
+.toast {
+  background: #222;
+  padding: 10px 15px;
+  margin-bottom: 10px;
+  border-left: 4px solid #2563eb;
+}
