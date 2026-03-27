@@ -1,0 +1,213 @@
+const { useState, useEffect } = React;
+
+// ========= MOCK BACKEND =========
+let MOCK_DB = {
+  users: [
+    { email: "admin@firm.io", password: "admin123", role: "admin" },
+    { email: "finance@firm.io", password: "fin123", role: "finance" },
+    { email: "viewer@firm.io", password: "view123", role: "viewer" },
+  ],
+  payments: [],
+};
+
+// ========= UTILS =========
+function toast(msg) {
+  const div = document.createElement("div");
+  div.className = "toast";
+  div.innerText = msg;
+  document.getElementById("toast-container").appendChild(div);
+  setTimeout(() => div.remove(), 3000);
+}
+
+// ========= FRAUD ENGINE =========
+function calculateRisk(payment, allPayments) {
+  let score = 0;
+
+  if (payment.amount > 10000) score += 40;
+
+  const sameClient = allPayments.filter(p => p.client === payment.client);
+  if (sameClient.length > 3) score += 20;
+
+  const duplicateRef = allPayments.find(p => p.reference === payment.reference);
+  if (duplicateRef) score += 50;
+
+  return score;
+}
+
+// ========= LOGIN =========
+function Login({ onLogin }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const login = () => {
+    const user = MOCK_DB.users.find(
+      u => u.email === email && u.password === password
+    );
+
+    if (!user) return toast("Invalid credentials");
+
+    localStorage.setItem("user", JSON.stringify(user));
+    onLogin(user);
+  };
+
+  return (
+    <div className="container">
+      <div className="card" style={{maxWidth:400, margin:"100px auto"}}>
+        <h2>PayCore Login</h2>
+
+        <input placeholder="Email" onChange={e=>setEmail(e.target.value)} />
+        <input type="password" placeholder="Password" onChange={e=>setPassword(e.target.value)} />
+
+        <button onClick={login}>Login</button>
+      </div>
+    </div>
+  );
+}
+
+// ========= HEADER =========
+function Header({ user, tab, setTab, logout }) {
+  return (
+    <div className="header">
+      <div className="tabs">
+        {["payments","fraud","recon"].map(t => (
+          <button key={t}
+            className={tab===t ? "active" : ""}
+            onClick={()=>setTab(t)}>
+            {t}
+          </button>
+        ))}
+      </div>
+
+      <div>
+        {user.role} | {user.email}
+        <button onClick={logout} style={{marginLeft:10}}>Logout</button>
+      </div>
+    </div>
+  );
+}
+
+// ========= PAYMENTS =========
+function Payments({ user, refresh }) {
+  const [form, setForm] = useState({client:"", amount:"", reference:""});
+
+  const create = () => {
+    const risk = calculateRisk(form, MOCK_DB.payments);
+
+    const newPayment = {
+      ...form,
+      id: Date.now(),
+      risk_score: risk
+    };
+
+    MOCK_DB.payments.push(newPayment);
+
+    toast("Payment created (risk " + risk + ")");
+    refresh();
+  };
+
+  const riskClass = (r) => r>=50?"risk-high":r>=20?"risk-medium":"risk-low";
+
+  return (
+    <div className="container">
+      <div style={{display:"flex", gap:20}}>
+
+        <div className="card" style={{width:300}}>
+          <h3>New Payment</h3>
+
+          {["client","amount","reference"].map(k=>(
+            <input key={k} placeholder={k}
+              onChange={e=>setForm({...form,[k]:e.target.value})}/>
+          ))}
+
+          <button onClick={create}>Create</button>
+        </div>
+
+        <div className="card" style={{flex:1}}>
+          <table className="table">
+            <thead><tr><th>Ref</th><th>Client</th><th>Amount</th><th>Risk</th></tr></thead>
+            <tbody>
+              {MOCK_DB.payments.map(p=>(
+                <tr key={p.id}>
+                  <td>{p.reference}</td>
+                  <td>{p.client}</td>
+                  <td>${p.amount}</td>
+                  <td className={riskClass(p.risk_score)}>{p.risk_score}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// ========= FRAUD =========
+function Fraud() {
+  const highRisk = MOCK_DB.payments.filter(p=>p.risk_score>=50);
+
+  return (
+    <div className="container">
+      <div className="card">
+        <h3>High Risk Payments</h3>
+        {highRisk.map(p=>(
+          <div key={p.id}>{p.reference} - {p.risk_score}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ========= RECON =========
+function Recon() {
+  const total = MOCK_DB.payments.reduce((a,p)=>a+Number(p.amount||0),0);
+  const bank = 50000;
+
+  return (
+    <div className="container">
+      <div className="card">
+        <h3>Reconciliation</h3>
+        <p>Bank: ${bank}</p>
+        <p>System: ${total}</p>
+        <p>Diff: ${bank-total}</p>
+      </div>
+    </div>
+  );
+}
+
+// ========= APP =========
+function App() {
+  const [user, setUser] = useState(null);
+  const [tab, setTab] = useState("payments");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(()=>{
+    const u = localStorage.getItem("user");
+    if(u) setUser(JSON.parse(u));
+  },[]);
+
+  useEffect(()=>{
+    const i = setInterval(()=>setRefreshKey(k=>k+1),5000);
+    return ()=>clearInterval(i);
+  },[]);
+
+  const logout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+  };
+
+  if (!user) return <Login onLogin={setUser}/>;
+
+  return (
+    <>
+      <Header user={user} tab={tab} setTab={setTab} logout={logout}/>
+
+      {tab==="payments" && <Payments user={user} refresh={()=>setRefreshKey(k=>k+1)} key={refreshKey}/>}
+      {tab==="fraud" && <Fraud key={refreshKey}/>}
+      {tab==="recon" && <Recon key={refreshKey}/>}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
