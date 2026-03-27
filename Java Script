@@ -1,14 +1,28 @@
 const { useState, useEffect } = React;
 
-// ========= MOCK BACKEND =========
-let MOCK_DB = {
-  users: [
-    { email: "admin@firm.io", password: "admin123", role: "admin" },
-    { email: "finance@firm.io", password: "fin123", role: "finance" },
-    { email: "viewer@firm.io", password: "view123", role: "viewer" },
-  ],
-  payments: [],
-};
+// ========= DATABASE (PERSISTENT) =========
+const STORAGE_KEY = "paycore_db";
+
+function loadDB() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) return JSON.parse(saved);
+
+  return {
+    users: [
+      { email: "admin@firm.io", password: "admin123", role: "admin" },
+      { email: "finance@firm.io", password: "fin123", role: "finance" },
+      { email: "viewer@firm.io", password: "view123", role: "viewer" },
+    ],
+    payments: [],
+  };
+}
+
+function saveDB(db) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+}
+
+// ========= GLOBAL DB =========
+let MOCK_DB = loadDB();
 
 // ========= UTILS =========
 function toast(msg) {
@@ -23,13 +37,20 @@ function toast(msg) {
 function calculateRisk(payment, allPayments) {
   let score = 0;
 
-  if (payment.amount > 10000) score += 40;
+  const amount = Number(payment.amount);
+
+  if (amount > 10000) score += 40;
 
   const sameClient = allPayments.filter(p => p.client === payment.client);
-  if (sameClient.length > 3) score += 20;
+  if (sameClient.length >= 3) score += 25;
 
   const duplicateRef = allPayments.find(p => p.reference === payment.reference);
-  if (duplicateRef) score += 50;
+  if (duplicateRef) score += 60;
+
+  // rapid transactions (within last 60s)
+  const now = Date.now();
+  const recent = allPayments.filter(p => now - p.createdAt < 60000);
+  if (recent.length > 5) score += 20;
 
   return score;
 }
@@ -91,51 +112,90 @@ function Payments({ user, refresh }) {
   const [form, setForm] = useState({client:"", amount:"", reference:""});
 
   const create = () => {
+    if (user.role === "viewer") return toast("Permission denied");
+
+    if (!form.client || !form.amount || !form.reference) {
+      return toast("All fields required");
+    }
+
+    const amount = Number(form.amount);
+    if (isNaN(amount) || amount <= 0) {
+      return toast("Invalid amount");
+    }
+
     const risk = calculateRisk(form, MOCK_DB.payments);
 
     const newPayment = {
       ...form,
+      amount,
       id: Date.now(),
-      risk_score: risk
+      risk_score: risk,
+      createdAt: Date.now()
     };
 
     MOCK_DB.payments.push(newPayment);
+    saveDB(MOCK_DB);
 
-    toast("Payment created (risk " + risk + ")");
+    toast(`Payment created (risk ${risk})`);
+
+    setForm({client:"", amount:"", reference:""});
     refresh();
   };
 
-  const riskClass = (r) => r>=50?"risk-high":r>=20?"risk-medium":"risk-low";
+  const riskClass = (r) => r>=60?"risk-high":r>=30?"risk-medium":"risk-low";
 
   return (
     <div className="container">
-      <div style={{display:"flex", gap:20}}>
+      <div className="flex flex-wrap">
 
+        {/* FORM */}
         <div className="card" style={{width:300}}>
           <h3>New Payment</h3>
 
           {["client","amount","reference"].map(k=>(
-            <input key={k} placeholder={k}
-              onChange={e=>setForm({...form,[k]:e.target.value})}/>
+            <input key={k}
+              value={form[k]}
+              placeholder={k}
+              onChange={e=>setForm({...form,[k]:e.target.value})}
+            />
           ))}
 
           <button onClick={create}>Create</button>
         </div>
 
+        {/* TABLE */}
         <div className="card" style={{flex:1}}>
-          <table className="table">
-            <thead><tr><th>Ref</th><th>Client</th><th>Amount</th><th>Risk</th></tr></thead>
-            <tbody>
-              {MOCK_DB.payments.map(p=>(
-                <tr key={p.id}>
-                  <td>{p.reference}</td>
-                  <td>{p.client}</td>
-                  <td>${p.amount}</td>
-                  <td className={riskClass(p.risk_score)}>{p.risk_score}</td>
+          <h3>Payments</h3>
+
+          {MOCK_DB.payments.length === 0 && (
+            <p style={{color:"#888"}}>No payments yet</p>
+          )}
+
+          <div className="table-wrapper">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Ref</th>
+                  <th>Client</th>
+                  <th>Amount</th>
+                  <th>Risk</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {MOCK_DB.payments.map(p=>(
+                  <tr key={p.id}>
+                    <td>{p.reference}</td>
+                    <td>{p.client}</td>
+                    <td>${p.amount.toLocaleString()}</td>
+                    <td className={riskClass(p.risk_score)}>
+                      {p.risk_score}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
         </div>
 
       </div>
@@ -145,14 +205,21 @@ function Payments({ user, refresh }) {
 
 // ========= FRAUD =========
 function Fraud() {
-  const highRisk = MOCK_DB.payments.filter(p=>p.risk_score>=50);
+  const highRisk = MOCK_DB.payments.filter(p=>p.risk_score>=60);
 
   return (
     <div className="container">
       <div className="card">
         <h3>High Risk Payments</h3>
+
+        {highRisk.length === 0 && (
+          <p style={{color:"#888"}}>No high-risk activity</p>
+        )}
+
         {highRisk.map(p=>(
-          <div key={p.id}>{p.reference} - {p.risk_score}</div>
+          <div key={p.id}>
+            {p.reference} — {p.client} — ${p.amount}
+          </div>
         ))}
       </div>
     </div>
@@ -161,16 +228,20 @@ function Fraud() {
 
 // ========= RECON =========
 function Recon() {
-  const total = MOCK_DB.payments.reduce((a,p)=>a+Number(p.amount||0),0);
+  const total = MOCK_DB.payments.reduce((a,p)=>a+p.amount,0);
   const bank = 50000;
+  const diff = bank - total;
 
   return (
     <div className="container">
       <div className="card">
         <h3>Reconciliation</h3>
-        <p>Bank: ${bank}</p>
-        <p>System: ${total}</p>
-        <p>Diff: ${bank-total}</p>
+
+        <p>Bank: ${bank.toLocaleString()}</p>
+        <p>System: ${total.toLocaleString()}</p>
+        <p style={{color: diff === 0 ? "#10b981" : "#ef4444"}}>
+          Diff: ${diff.toLocaleString()}
+        </p>
       </div>
     </div>
   );
@@ -180,17 +251,14 @@ function Recon() {
 function App() {
   const [user, setUser] = useState(null);
   const [tab, setTab] = useState("payments");
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [, forceUpdate] = useState(0);
 
   useEffect(()=>{
     const u = localStorage.getItem("user");
     if(u) setUser(JSON.parse(u));
   },[]);
 
-  useEffect(()=>{
-    const i = setInterval(()=>setRefreshKey(k=>k+1),5000);
-    return ()=>clearInterval(i);
-  },[]);
+  const refresh = () => forceUpdate(x=>x+1);
 
   const logout = () => {
     localStorage.removeItem("user");
@@ -203,9 +271,9 @@ function App() {
     <>
       <Header user={user} tab={tab} setTab={setTab} logout={logout}/>
 
-      {tab==="payments" && <Payments user={user} refresh={()=>setRefreshKey(k=>k+1)} key={refreshKey}/>}
-      {tab==="fraud" && <Fraud key={refreshKey}/>}
-      {tab==="recon" && <Recon key={refreshKey}/>}
+      {tab==="payments" && <Payments user={user} refresh={refresh}/>}
+      {tab==="fraud" && <Fraud />}
+      {tab==="recon" && <Recon />}
     </>
   );
 }
