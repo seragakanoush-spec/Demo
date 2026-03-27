@@ -1,281 +1,75 @@
-const { useState, useEffect } = React;
+// 1. DATA ARCHITECTURE
+// Professional sites keep data separate from the HTML so it can be updated easily or fetched from a database later.
+const portfolioData = [
+  {
+    id: '01',
+    title: "New Cairo Cultural Center",
+    category: "Public Sector",
+    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800"
+  },
+  {
+    id: '02',
+    title: "The Horizon Pavilion",
+    category: "Exhibition",
+    image: "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&q=80&w=800"
+  },
+  {
+    id: '03',
+    title: "Vector Tower",
+    category: "Commercial",
+    image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=800"
+  }
+];
 
-// ========= DATABASE (PERSISTENT) =========
-const STORAGE_KEY = "paycore_db";
+// 2. DYNAMIC RENDERING
+// This function builds the HTML for our projects instantly when the page loads.
+function renderProjects() {
+  const grid = document.getElementById('projectGrid');
+  
+  if (!grid) return; // Safety check
 
-function loadDB() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) return JSON.parse(saved);
+  const htmlString = portfolioData.map(project => `
+    <article class="project-card">
+      <img src="${project.image}" alt="${project.title}" class="project-image" loading="lazy">
+      <div class="project-meta">
+        <h3>${project.title}</h3>
+        <span style="color: var(--color-text-muted)">${project.category}</span>
+      </div>
+    </article>
+  `).join('');
 
-  return {
-    users: [
-      { email: "admin@firm.io", password: "admin123", role: "admin" },
-      { email: "finance@firm.io", password: "fin123", role: "finance" },
-      { email: "viewer@firm.io", password: "view123", role: "viewer" },
-    ],
-    payments: [],
-  };
+  grid.innerHTML = htmlString;
 }
 
-function saveDB(db) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-}
-
-// ========= GLOBAL DB =========
-let MOCK_DB = loadDB();
-
-// ========= UTILS =========
-function toast(msg) {
-  const div = document.createElement("div");
-  div.className = "toast";
-  div.innerText = msg;
-  document.getElementById("toast-container").appendChild(div);
-  setTimeout(() => div.remove(), 3000);
-}
-
-// ========= FRAUD ENGINE =========
-function calculateRisk(payment, allPayments) {
-  let score = 0;
-
-  const amount = Number(payment.amount);
-
-  if (amount > 10000) score += 40;
-
-  const sameClient = allPayments.filter(p => p.client === payment.client);
-  if (sameClient.length >= 3) score += 25;
-
-  const duplicateRef = allPayments.find(p => p.reference === payment.reference);
-  if (duplicateRef) score += 60;
-
-  // rapid transactions (within last 60s)
-  const now = Date.now();
-  const recent = allPayments.filter(p => now - p.createdAt < 60000);
-  if (recent.length > 5) score += 20;
-
-  return score;
-}
-
-// ========= LOGIN =========
-function Login({ onLogin }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  const login = () => {
-    const user = MOCK_DB.users.find(
-      u => u.email === email && u.password === password
-    );
-
-    if (!user) return toast("Invalid credentials");
-
-    localStorage.setItem("user", JSON.stringify(user));
-    onLogin(user);
+// 3. SCROLL ANIMATIONS (Intersection Observer)
+// This is a highly performant way to detect when an element enters the screen to trigger an animation.
+function initScrollAnimations() {
+  const observerOptions = {
+    root: null,
+    rootMargin: '0px',
+    threshold: 0.15 // Triggers when 15% of the element is visible
   };
 
-  return (
-    <div className="container">
-      <div className="card" style={{maxWidth:400, margin:"100px auto"}}>
-        <h2>PayCore Login</h2>
+  const observer = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        // Add the CSS class that fades it in
+        entry.target.classList.add('is-visible');
+        // Stop observing once it's visible so the animation only happens once
+        observer.unobserve(entry.target);
+      }
+    });
+  }, observerOptions);
 
-        <input placeholder="Email" onChange={e=>setEmail(e.target.value)} />
-        <input type="password" placeholder="Password" onChange={e=>setPassword(e.target.value)} />
-
-        <button onClick={login}>Login</button>
-      </div>
-    </div>
-  );
+  // Grab all the cards we just created and observe them
+  const cards = document.querySelectorAll('.project-card');
+  cards.forEach(card => observer.observe(card));
 }
 
-// ========= HEADER =========
-function Header({ user, tab, setTab, logout }) {
-  return (
-    <div className="header">
-      <div className="tabs">
-        {["payments","fraud","recon"].map(t => (
-          <button key={t}
-            className={tab===t ? "active" : ""}
-            onClick={()=>setTab(t)}>
-            {t}
-          </button>
-        ))}
-      </div>
-
-      <div>
-        {user.role} | {user.email}
-        <button onClick={logout} style={{marginLeft:10}}>Logout</button>
-      </div>
-    </div>
-  );
-}
-
-// ========= PAYMENTS =========
-function Payments({ user, refresh }) {
-  const [form, setForm] = useState({client:"", amount:"", reference:""});
-
-  const create = () => {
-    if (user.role === "viewer") return toast("Permission denied");
-
-    if (!form.client || !form.amount || !form.reference) {
-      return toast("All fields required");
-    }
-
-    const amount = Number(form.amount);
-    if (isNaN(amount) || amount <= 0) {
-      return toast("Invalid amount");
-    }
-
-    const risk = calculateRisk(form, MOCK_DB.payments);
-
-    const newPayment = {
-      ...form,
-      amount,
-      id: Date.now(),
-      risk_score: risk,
-      createdAt: Date.now()
-    };
-
-    MOCK_DB.payments.push(newPayment);
-    saveDB(MOCK_DB);
-
-    toast(`Payment created (risk ${risk})`);
-
-    setForm({client:"", amount:"", reference:""});
-    refresh();
-  };
-
-  const riskClass = (r) => r>=60?"risk-high":r>=30?"risk-medium":"risk-low";
-
-  return (
-    <div className="container">
-      <div className="flex flex-wrap">
-
-        {/* FORM */}
-        <div className="card" style={{width:300}}>
-          <h3>New Payment</h3>
-
-          {["client","amount","reference"].map(k=>(
-            <input key={k}
-              value={form[k]}
-              placeholder={k}
-              onChange={e=>setForm({...form,[k]:e.target.value})}
-            />
-          ))}
-
-          <button onClick={create}>Create</button>
-        </div>
-
-        {/* TABLE */}
-        <div className="card" style={{flex:1}}>
-          <h3>Payments</h3>
-
-          {MOCK_DB.payments.length === 0 && (
-            <p style={{color:"#888"}}>No payments yet</p>
-          )}
-
-          <div className="table-wrapper">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Ref</th>
-                  <th>Client</th>
-                  <th>Amount</th>
-                  <th>Risk</th>
-                </tr>
-              </thead>
-              <tbody>
-                {MOCK_DB.payments.map(p=>(
-                  <tr key={p.id}>
-                    <td>{p.reference}</td>
-                    <td>{p.client}</td>
-                    <td>${p.amount.toLocaleString()}</td>
-                    <td className={riskClass(p.risk_score)}>
-                      {p.risk_score}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-        </div>
-
-      </div>
-    </div>
-  );
-}
-
-// ========= FRAUD =========
-function Fraud() {
-  const highRisk = MOCK_DB.payments.filter(p=>p.risk_score>=60);
-
-  return (
-    <div className="container">
-      <div className="card">
-        <h3>High Risk Payments</h3>
-
-        {highRisk.length === 0 && (
-          <p style={{color:"#888"}}>No high-risk activity</p>
-        )}
-
-        {highRisk.map(p=>(
-          <div key={p.id}>
-            {p.reference} — {p.client} — ${p.amount}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ========= RECON =========
-function Recon() {
-  const total = MOCK_DB.payments.reduce((a,p)=>a+p.amount,0);
-  const bank = 50000;
-  const diff = bank - total;
-
-  return (
-    <div className="container">
-      <div className="card">
-        <h3>Reconciliation</h3>
-
-        <p>Bank: ${bank.toLocaleString()}</p>
-        <p>System: ${total.toLocaleString()}</p>
-        <p style={{color: diff === 0 ? "#10b981" : "#ef4444"}}>
-          Diff: ${diff.toLocaleString()}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ========= APP =========
-function App() {
-  const [user, setUser] = useState(null);
-  const [tab, setTab] = useState("payments");
-  const [, forceUpdate] = useState(0);
-
-  useEffect(()=>{
-    const u = localStorage.getItem("user");
-    if(u) setUser(JSON.parse(u));
-  },[]);
-
-  const refresh = () => forceUpdate(x=>x+1);
-
-  const logout = () => {
-    localStorage.removeItem("user");
-    setUser(null);
-  };
-
-  if (!user) return <Login onLogin={setUser}/>;
-
-  return (
-    <>
-      <Header user={user} tab={tab} setTab={setTab} logout={logout}/>
-
-      {tab==="payments" && <Payments user={user} refresh={refresh}/>}
-      {tab==="fraud" && <Fraud />}
-      {tab==="recon" && <Recon />}
-    </>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+// 4. INITIALIZE APP
+// Wait for the DOM to be fully loaded before running our scripts
+document.addEventListener('DOMContentLoaded', () => {
+  renderProjects();
+  // Small delay to ensure the DOM has updated before observing
+  setTimeout(initScrollAnimations, 100); 
+});
