@@ -1,20 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- ================= META ================= -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PayCore</title>
 
+  <title>PayCore | Intelligent Payment System</title>
+
+  <!-- SEO -->
+  <meta name="description" content="PayCore - Intelligent procurement and payment system with fraud detection and reconciliation engine." />
+  <meta name="theme-color" content="#0a0d14" />
+
+  <!-- ================= FONTS ================= -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <!-- ================= STYLES ================= -->
   <link rel="stylesheet" href="style.css">
 
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- ================= FAVICON ================= -->
+  <link rel="icon" href="data:,">
+
+  <!-- ================= REACT ================= -->
+  <script defer src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script defer src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+  <!-- Babel (DEV ONLY) -->
+  <script defer src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- ================= LOADING STYLE ================= -->
+  <style>
+    #loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: Inter, sans-serif;
+      color: #aaa;
+    }
+  </style>
 </head>
+
 <body>
-  <div id="root"></div>
+
+  <!-- ================= APP ROOT ================= -->
+  <div id="root">
+    <div id="loading">
+      Loading PayCore...
+    </div>
+  </div>
+
+  <!-- Toasts -->
   <div id="toast-container"></div>
 
+  <!-- ================= FALLBACK ================= -->
+  <noscript>
+    <div style="color:white; padding:20px;">
+      This app requires JavaScript to run.
+    </div>
+  </noscript>
+
+  <!-- ================= APP SCRIPT ================= -->
   <script type="text/babel" src="app.js"></script>
+
 </body>
-</html># Demo
+</html>
