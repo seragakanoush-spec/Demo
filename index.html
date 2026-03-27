@@ -1,280 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Atelier | Architecture & Urbanism</title>
-
-  <script defer src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script defer src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script defer src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <style>
-    :root {
-      --bg: #ffffff;
-      --text: #000000;
-      --grey: #888888;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-      line-height: 1.4;
-      overflow-x: hidden;
-    }
-
-    /* ================= NAVIGATION ================= */
-    nav {
-      position: fixed;
-      top: 0;
-      width: 100%;
-      padding: 24px 40px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 100;
-      mix-blend-mode: difference;
-      color: white;
-    }
-
-    .logo {
-      font-size: 24px;
-      font-weight: 700;
-      letter-spacing: -1px;
-      text-transform: uppercase;
-    }
-
-    .nav-links {
-      display: flex;
-      gap: 32px;
-    }
-
-    .nav-links a {
-      color: white;
-      text-decoration: none;
-      font-size: 14px;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      cursor: pointer;
-    }
-
-    /* ================= HERO SECTION ================= */
-    .hero {
-      height: 100vh;
-      width: 100vw;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-
-    .hero img {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      z-index: -1;
-      transform: scale(1.05);
-      animation: slowZoom 20s infinite alternate linear;
-    }
-
-    .hero-overlay {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.3);
-      z-index: -1;
-    }
-
-    .hero-text {
-      text-align: center;
-      color: white;
-      padding: 0 20px;
-    }
-
-    .hero-text h1 {
-      font-size: clamp(3rem, 8vw, 7rem);
-      font-weight: 600;
-      letter-spacing: -2px;
-      margin-bottom: 20px;
-    }
-
-    .hero-text p {
-      font-size: clamp(1rem, 2vw, 1.5rem);
-      font-weight: 300;
-      letter-spacing: 1px;
-    }
-
-    /* ================= PROJECT GRID ================= */
-    .section-title {
-      font-size: 1.5rem;
-      padding: 60px 40px 20px;
-      border-bottom: 1px solid #eaeaea;
-      margin-bottom: 40px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-      gap: 40px;
-      padding: 0 40px 100px;
-    }
-
-    .project {
-      position: relative;
-      cursor: pointer;
-      group;
-    }
-
-    .project-image {
-      width: 100%;
-      aspect-ratio: 4/5;
-      overflow: hidden;
-      background: #f4f4f4;
-    }
-
-    .project-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
-    }
-
-    .project:hover .project-image img {
-      transform: scale(1.05);
-    }
-
-    .project-info {
-      padding-top: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-
-    .project-info h3 {
-      font-size: 1.25rem;
-      font-weight: 500;
-      letter-spacing: -0.5px;
-    }
-
-    .project-info span {
-      font-size: 0.85rem;
-      color: var(--grey);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    /* ================= FOOTER ================= */
-    footer {
-      background: #000;
-      color: #fff;
-      padding: 80px 40px;
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 40px;
-    }
-
-    footer h2 {
-      font-size: 2rem;
-      letter-spacing: -1px;
-      margin-bottom: 20px;
-    }
-
-    @keyframes slowZoom {
-      0% { transform: scale(1); }
-      100% { transform: scale(1.1); }
-    }
-
-    @media (max-width: 768px) {
-      .grid { grid-template-columns: 1fr; padding: 0 20px 60px; }
-      nav { padding: 20px; }
-      .nav-links { display: none; }
-      .section-title { padding: 40px 20px 20px; }
-    }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atelier | High-End Architecture</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+  
+  <script type="module" src="app.js" defer></script>
 </head>
-
 <body>
-  <div id="root"></div>
 
-  <script type="text/babel">
-    const { useState } = React;
+  <nav class="site-nav">
+    <div class="logo">Atelier.</div>
+    <ul class="nav-links">
+      <li><a href="#work">Work</a></li>
+      <li><a href="#studio">Studio</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
 
-    // High-quality architecture placeholder images from Unsplash
-    const projects = [
-      { id: 1, title: "New Cairo Cultural Center", category: "Cultural", year: "2025", img: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1200" },
-      { id: 2, title: "Nile Horizon Tower", category: "Commercial", year: "2024", img: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1200" },
-      { id: 3, title: "Desert Pavilion", category: "Public Space", year: "2026", img: "https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&q=80&w=1200" },
-      { id: 4, title: "Urban Canopy Hub", category: "Infrastructure", year: "2023", img: "https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&q=80&w=1200" }
-    ];
+  <main>
+    <header class="hero">
+      <div class="hero-content">
+        <h1 class="reveal-text">Shaping the<br>Built Environment.</h1>
+        <p class="fade-in">Pioneering spatial design and urban architecture.</p>
+      </div>
+    </header>
 
-    function App() {
-      return (
-        <>
-          <nav>
-            <div className="logo">Atelier</div>
-            <div className="nav-links">
-              <a>Projects</a>
-              <a>Studio</a>
-              <a>Insights</a>
-              <a>Contact</a>
-            </div>
-          </nav>
+    <section id="work" class="projects-section">
+      <div class="project-grid" id="projectGrid"></div>
+    </section>
+  </main>
 
-          <section className="hero">
-            <img src="https://images.unsplash.com/photo-1487958449943-2429e8be8625?auto=format&fit=crop&q=80&w=2000" alt="Architecture Hero" />
-            <div className="hero-overlay"></div>
-            <div className="hero-text">
-              <h1>Designing Tomorrow.</h1>
-              <p>Architecture, Urbanism, and Spatial Design</p>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="section-title">Selected Works</h2>
-            <div className="grid">
-              {projects.map(proj => (
-                <div key={proj.id} className="project">
-                  <div className="project-image">
-                    <img src={proj.img} alt={proj.title} loading="lazy" />
-                  </div>
-                  <div className="project-info">
-                    <div>
-                      <h3>{proj.title}</h3>
-                      <span>{proj.category}</span>
-                    </div>
-                    <span>{proj.year}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <footer>
-            <div>
-              <h2>Let's build together.</h2>
-              <p style={{color: "#888"}}>contact@atelier-architecture.com</p>
-            </div>
-            <div style={{color: "#888", textAlign: "right"}}>
-              <p>Atelier Studio</p>
-              <p>Global Architecture & Design</p>
-            </div>
-          </footer>
-        </>
-      );
-    }
-
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-  </script>
 </body>
 </html>
